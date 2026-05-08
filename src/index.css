@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --background: 40 30% 97%;
+    --foreground: 0 30% 18%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 30% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 30% 18%;
+
+    --primary: 0 55% 28%;
+    --primary-foreground: 40 60% 92%;
+
+    --secondary: 40 75% 52%;
+    --secondary-foreground: 0 30% 18%;
+
+    --muted: 40 20% 92%;
+    --muted-foreground: 0 10% 42%;
+
+    --accent: 40 85% 55%;
+    --accent-foreground: 0 30% 18%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 20% 85%;
+    --input: 40 20% 85%;
+    --ring: 0 55% 28%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 55% 28%;
+    --sidebar-foreground: 40 60% 92%;
+    --sidebar-primary: 40 85% 55%;
+    --sidebar-primary-foreground: 0 55% 28%;
+    --sidebar-accent: 0 50% 22%;
+    --sidebar-accent-foreground: 40 60% 92%;
+    --sidebar-border: 0 45% 35%;
+    --sidebar-ring: 40 85% 55%;
+
+    --success: 145 45% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 40 85% 55%;
+    --warning-foreground: 0 30% 18%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Nunito', sans-serif;
+  }
+}
