@@ -17,17 +17,18 @@ export const useUserRole = () => {
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .eq('user_id', user.id);
       if (error) {
         console.error('[useUserRole] user_roles fetch failed:', error);
         return null;
       }
-      if (!isAppRole(data?.role)) {
+      const roles = (data ?? []).map((row) => row.role).filter(isAppRole);
+      const resolvedRole = roles.includes('admin') ? 'admin' : roles.includes('manager') ? 'manager' : roles.includes('viewer') ? 'viewer' : null;
+      if (!resolvedRole) {
         console.warn('[useUserRole] No valid role row for user', user.id, '— check public.user_roles in this environment.');
         return null;
       }
-      return data.role;
+      return resolvedRole;
     },
     enabled: !authLoading && !!user?.id,
     staleTime: 0,
