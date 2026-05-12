@@ -41,7 +41,7 @@ import {
 
 type MenuItem = { title: string; url: string; icon: any; minRole?: 'admin' | 'manager' };
 
-const roleLabels = { admin: 'Admin', manager: 'Manager', viewer: 'Teacher' };
+const roleLabels: Record<string, string> = { admin: 'Admin', manager: 'Manager', viewer: 'Viewer' };
 
 export function AppSidebar() {
   const { state } = useSidebar();

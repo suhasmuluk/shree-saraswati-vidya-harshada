@@ -11,10 +11,19 @@ export const useUserRole = () => {
     queryKey: ['user-role', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data } = await supabase.rpc('get_user_role', { _user_id: user.id });
-      return (data as AppRole) ?? 'viewer';
+      const { data, error } = await supabase.rpc('get_user_role', { _user_id: user.id });
+      if (error) {
+        console.error('[useUserRole] get_user_role failed:', error);
+        return null;
+      }
+      if (!data) {
+        console.warn('[useUserRole] No role row for user', user.id, '— check user_roles table in this environment.');
+        return null;
+      }
+      return data as AppRole;
     },
     enabled: !!user?.id,
+    staleTime: 0,
   });
 
   return {
