@@ -4,31 +4,42 @@ import { useAuth } from './useAuth';
 
 export type AppRole = 'admin' | 'manager' | 'viewer';
 
+const isAppRole = (role: unknown): role is AppRole =>
+  role === 'admin' || role === 'manager' || role === 'viewer';
+
 export const useUserRole = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const { data: role, isLoading } = useQuery({
-    queryKey: ['user-role', user?.id],
+    queryKey: ['user-role', user?.id, user?.email],
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data, error } = await supabase.rpc('get_user_role', { _user_id: user.id });
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
       if (error) {
-        console.error('[useUserRole] get_user_role failed:', error);
+        console.error('[useUserRole] user_roles fetch failed:', error);
         return null;
       }
-      if (!data) {
-        console.warn('[useUserRole] No role row for user', user.id, '— check user_roles table in this environment.');
+      const roles = (data ?? []).map((row) => row.role).filter(isAppRole);
+      const resolvedRole = roles.includes('admin') ? 'admin' : roles.includes('manager') ? 'manager' : roles.includes('viewer') ? 'viewer' : null;
+      if (!resolvedRole) {
+        console.warn('[useUserRole] No valid role row for user', user.id, '— check public.user_roles in this environment.');
         return null;
       }
-      return data as AppRole;
+      return resolvedRole;
     },
-    enabled: !!user?.id,
+    enabled: !authLoading && !!user?.id,
     staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   return {
     role: role ?? null,
-    isLoading,
+    isLoading: authLoading || isLoading,
     isAdmin: role === 'admin',
     isManager: role === 'manager' || role === 'admin',
     isViewer: role === 'viewer',
