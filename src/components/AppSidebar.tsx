@@ -137,13 +137,26 @@ export function AppSidebar() {
 
       <SidebarFooter>
         <SidebarMenu>
-          {!collapsed && role && (
+          {!collapsed && (
             <SidebarMenuItem>
               <div className="px-3 py-2 flex items-center gap-2">
-                <Shield className="h-4 w-4 text-muted-foreground" />
+                <Shield className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-auto">
-                  {roleLabels[role] ?? role}
+                {role ? (
+                  <Badge variant={role === 'admin' ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0 ml-auto">
+                    {roleLabels[role] ?? role}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-auto">…</Badge>
+                )}
+              </div>
+            </SidebarMenuItem>
+          )}
+          {collapsed && role && (
+            <SidebarMenuItem>
+              <div className="px-2 py-1 flex justify-center">
+                <Badge variant={role === 'admin' ? 'default' : 'secondary'} className="text-[9px] px-1 py-0">
+                  {(roleLabels[role] ?? role).slice(0, 3)}
                 </Badge>
               </div>
             </SidebarMenuItem>
