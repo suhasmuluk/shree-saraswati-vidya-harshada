@@ -26,6 +26,9 @@ const Teachers = () => {
   const [classOpen, setClassOpen] = useState(false);
   const [classEditId, setClassEditId] = useState<string | null>(null);
   const [classForm, setClassForm] = useState({ name: '' });
+  const [deleteTarget, setDeleteTarget] = useState<{ type: EntityType; id: string; name: string } | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
