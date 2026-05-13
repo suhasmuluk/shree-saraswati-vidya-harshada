@@ -295,23 +295,40 @@ const Teachers = () => {
             <Card><CardContent className="p-8 text-center text-muted-foreground">{t('teachers.noTeachers')}</CardContent></Card>
           ) : (
             <div className="grid gap-3">
-              {teachers.map((tc: any) => (
-                <Card key={tc.id} className="shadow-sm">
+              {teachers.map((tc: any) => {
+                const isArchived = tc.is_active === false || tc.status === 'archived';
+                return (
+                <Card key={tc.id} className={`shadow-sm ${isArchived ? 'opacity-70 border-l-4 border-l-muted-foreground' : ''}`}>
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-foreground">{tc.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-foreground">{tc.name}</h3>
+                        {isArchived && (
+                          <Badge variant="outline" className="text-[10px] border-muted-foreground text-muted-foreground">
+                            <Archive className="h-3 w-3 mr-1" /> Archived
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                         <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{tc.phone}</span>
                         <Badge variant="secondary">{(tc.classes as any)?.name ?? t('teachers.notAssigned')}</Badge>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="icon" onClick={() => openEdit(tc)}><Edit className="h-4 w-4" /></Button>
-                      <Button variant="outline" size="icon" onClick={() => deleteMutation.mutate(tc.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      {!isArchived && <Button variant="outline" size="icon" onClick={() => openEdit(tc)}><Edit className="h-4 w-4" /></Button>}
+                      {isArchived ? (
+                        <Button variant="outline" size="icon" onClick={() => restoreMutation.mutate({ type: 'teacher', id: tc.id, name: tc.name })} title="Restore">
+                          <ArchiveRestore className="h-4 w-4 text-primary" />
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="icon" onClick={() => setDeleteTarget({ type: 'teacher', id: tc.id, name: tc.name })} title="Archive / Delete">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              );})}
             </div>
           )}
         </TabsContent>
