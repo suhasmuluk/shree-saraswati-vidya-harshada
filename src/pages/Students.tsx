@@ -418,17 +418,19 @@ const Students = () => {
         </div>
       )}
 
-      {/* Delete Confirmation */}
+      {/* Archive / Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) { setDeleteTarget(null); setDeleteReason(''); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete?</AlertDialogTitle>
+            <AlertDialogTitle>Archive this student?</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to delete <span className="font-semibold">{deleteTarget?.name}</span>. This action cannot be undone. All related records (fees, attendance, etc.) may also be affected.
+              <span className="font-semibold">{deleteTarget?.name}</span> will be removed from active lists and dropdowns.
+              If linked records (attendance, fees, exams, siblings) exist, the student will be <strong>archived</strong> to preserve history.
+              Otherwise, the record will be soft-deleted. You can restore archived students at any time from the "Archived" filter.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Reason for deletion *</label>
+            <label className="text-sm font-medium text-foreground">Reason *</label>
             <Textarea
               placeholder="e.g. Student left the school, duplicate entry..."
               value={deleteReason}
@@ -443,16 +445,19 @@ const Students = () => {
               onClick={(e) => {
                 e.preventDefault();
                 if (deleteTarget && deleteReason.trim()) {
-                  deleteMutation.mutate(deleteTarget.id, {
-                    onSuccess: () => {
-                      setDeleteTarget(null);
-                      setDeleteReason('');
+                  deleteMutation.mutate(
+                    { id: deleteTarget.id, name: deleteTarget.name, reason: deleteReason.trim() },
+                    {
+                      onSuccess: () => {
+                        setDeleteTarget(null);
+                        setDeleteReason('');
+                      },
                     },
-                  });
+                  );
                 }
               }}
             >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete Student'}
+              {deleteMutation.isPending ? 'Processing...' : 'Confirm'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
