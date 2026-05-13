@@ -86,15 +86,31 @@ const Teachers = () => {
     onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('teachers').delete().eq('id', id);
-      if (error) throw error;
+  const archiveMutation = useMutation({
+    mutationFn: async ({ type, id, name, reason }: { type: EntityType; id: string; name: string; reason: string }) => {
+      return await softDeleteEntity(type, id, name, reason);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teachers'] });
-      toast({ title: 'Teacher deleted' });
+    onSuccess: (res, vars) => {
+      queryClient.invalidateQueries({ queryKey: [vars.type === 'teacher' ? 'teachers' : 'staff'] });
+      toast({
+        title: res.archivedInstead ? `${vars.type === 'teacher' ? 'Teacher' : 'Staff'} archived` : `${vars.type === 'teacher' ? 'Teacher' : 'Staff'} deleted`,
+        description: res.archivedInstead
+          ? 'Linked records exist (attendance/salary). Record was archived to preserve history.'
+          : 'Record removed from active lists.',
+      });
     },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async ({ type, id, name }: { type: EntityType; id: string; name: string }) => {
+      await restoreEntity(type, id, name);
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: [vars.type === 'teacher' ? 'teachers' : 'staff'] });
+      toast({ title: 'Restored' });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
 
   // Staff mutations
