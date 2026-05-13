@@ -203,7 +203,10 @@ const Students = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{t('students.title')}</h1>
-          <p className="text-muted-foreground">{students.length} {t('students.totalStudents')}</p>
+          <p className="text-muted-foreground">
+            {activeCount} {t('students.totalStudents')}
+            {archivedCount > 0 && <span className="ml-2 text-xs">• {archivedCount} archived</span>}
+          </p>
         </div>
         <Dialog open={open} onOpenChange={(v) => { if (!v) closeDialog(); else setOpen(true); }}>
           <DialogTrigger asChild>
