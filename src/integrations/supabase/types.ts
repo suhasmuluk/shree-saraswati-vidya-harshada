@@ -70,6 +70,42 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          entity_id: string
+          entity_name: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+          performed_at: string
+          performed_by: string | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          entity_id: string
+          entity_name?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          performed_at?: string
+          performed_by?: string | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          entity_id?: string
+          entity_name?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          performed_at?: string
+          performed_by?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       classes: {
         Row: {
           created_at: string
@@ -403,32 +439,50 @@ export type Database = {
       staff: {
         Row: {
           address: string | null
+          archive_reason: string | null
+          archived_at: string | null
           base_salary: number
           created_at: string
+          deleted_at: string | null
           id: string
+          is_active: boolean
+          is_deleted: boolean
           name: string
           phone: string
           role: string
+          status: string
           updated_at: string
         }
         Insert: {
           address?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
           base_salary?: number
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_active?: boolean
+          is_deleted?: boolean
           name: string
           phone: string
           role?: string
+          status?: string
           updated_at?: string
         }
         Update: {
           address?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
           base_salary?: number
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_active?: boolean
+          is_deleted?: boolean
           name?: string
           phone?: string
           role?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -502,14 +556,19 @@ export type Database = {
         Row: {
           address: string | null
           admission_date: string
+          archive_reason: string | null
+          archived_at: string | null
           books_issued: boolean
           class_id: string | null
           created_at: string
           date_of_birth: string | null
+          deleted_at: string | null
           gender: string | null
           has_transport: boolean
           id: string
           inquiry_id: string | null
+          is_active: boolean
+          is_deleted: boolean
           items_issue_date: string | null
           items_remarks: string | null
           materials_issued: boolean
@@ -517,6 +576,7 @@ export type Database = {
           parent_name: string
           parent_phone: string
           photo_url: string | null
+          status: string
           transport_route: string | null
           transport_type: string | null
           uniform_issued: boolean
@@ -525,14 +585,19 @@ export type Database = {
         Insert: {
           address?: string | null
           admission_date?: string
+          archive_reason?: string | null
+          archived_at?: string | null
           books_issued?: boolean
           class_id?: string | null
           created_at?: string
           date_of_birth?: string | null
+          deleted_at?: string | null
           gender?: string | null
           has_transport?: boolean
           id?: string
           inquiry_id?: string | null
+          is_active?: boolean
+          is_deleted?: boolean
           items_issue_date?: string | null
           items_remarks?: string | null
           materials_issued?: boolean
@@ -540,6 +605,7 @@ export type Database = {
           parent_name: string
           parent_phone: string
           photo_url?: string | null
+          status?: string
           transport_route?: string | null
           transport_type?: string | null
           uniform_issued?: boolean
@@ -548,14 +614,19 @@ export type Database = {
         Update: {
           address?: string | null
           admission_date?: string
+          archive_reason?: string | null
+          archived_at?: string | null
           books_issued?: boolean
           class_id?: string | null
           created_at?: string
           date_of_birth?: string | null
+          deleted_at?: string | null
           gender?: string | null
           has_transport?: boolean
           id?: string
           inquiry_id?: string | null
+          is_active?: boolean
+          is_deleted?: boolean
           items_issue_date?: string | null
           items_remarks?: string | null
           materials_issued?: boolean
@@ -563,6 +634,7 @@ export type Database = {
           parent_name?: string
           parent_phone?: string
           photo_url?: string | null
+          status?: string
           transport_route?: string | null
           transport_type?: string | null
           uniform_issued?: boolean
@@ -587,30 +659,48 @@ export type Database = {
       }
       teachers: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
           base_salary: number
           class_id: string | null
           created_at: string
+          deleted_at: string | null
           id: string
+          is_active: boolean
+          is_deleted: boolean
           name: string
           phone: string
+          status: string
           updated_at: string
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
           base_salary?: number
           class_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_active?: boolean
+          is_deleted?: boolean
           name: string
           phone: string
+          status?: string
           updated_at?: string
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
           base_salary?: number
           class_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_active?: boolean
+          is_deleted?: boolean
           name?: string
           phone?: string
+          status?: string
           updated_at?: string
         }
         Relationships: [

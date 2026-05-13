@@ -49,7 +49,7 @@ const BrightStudents = () => {
   const { data: students = [] } = useQuery({
     queryKey: ['students-list'],
     queryFn: async () => {
-      const { data } = await supabase.from('students').select('id, name').order('name');
+      const { data } = await supabase.from('students').select('id, name').eq('is_active', true).order('name');
       return data ?? [];
     },
   });

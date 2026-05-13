@@ -18,6 +18,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import SiblingManager from '@/components/students/SiblingManager';
 import { WhatsAppTransportButton } from '@/components/students/WhatsAppActions';
 import IssuedItemsDetails from '@/components/students/IssuedItemsDetails';
+import { ArchiveRestore, Archive } from 'lucide-react';
+import { archiveEntity, restoreEntity, softDeleteEntity } from '@/lib/softDelete';
 
 interface StudentForm {
   name: string;
@@ -67,6 +69,7 @@ const Students = () => {
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('all');
   const [issuedFilter, setIssuedFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'archived' | 'all'>('active');
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [deleteReason, setDeleteReason] = useState('');
@@ -84,9 +87,13 @@ const Students = () => {
   });
 
   const { data: students = [], isLoading } = useQuery({
-    queryKey: ['students'],
+      queryKey: ['students'],
     queryFn: async () => {
-      const { data } = await supabase.from('students').select('*, classes(name)').order('name');
+      const { data } = await supabase
+        .from('students')
+        .select('*, classes(name)')
+        .eq('is_deleted', false)
+        .order('name');
       return data ?? [];
     },
   });
@@ -119,14 +126,30 @@ const Students = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('students').delete().eq('id', id);
-      if (error) throw error;
+    mutationFn: async ({ id, name, reason }: { id: string; name: string; reason: string }) => {
+      return await softDeleteEntity('student', id, name, reason);
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast({
+        title: res.archivedInstead ? 'Student archived' : 'Student deleted',
+        description: res.archivedInstead
+          ? 'Linked records exist (attendance/fees/exams). Record was archived to preserve history.'
+          : 'Record removed from active lists.',
+      });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      await restoreEntity('student', id, name);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
-      toast({ title: 'Student deleted' });
+      toast({ title: 'Student restored' });
     },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
 
   const closeDialog = () => {
@@ -163,8 +186,15 @@ const Students = () => {
       (issuedFilter === 'issued' && status === 'all') ||
       (issuedFilter === 'partial' && status === 'partial') ||
       (issuedFilter === 'not_issued' && status === 'none');
-    return matchesSearch && matchesClass && matchesIssued;
+    const isArchived = s.is_active === false || s.status === 'archived';
+    const matchesStatus = statusFilter === 'all'
+      || (statusFilter === 'active' && !isArchived)
+      || (statusFilter === 'archived' && isArchived);
+    return matchesSearch && matchesClass && matchesIssued && matchesStatus;
   });
+
+  const activeCount = students.filter((s: any) => s.is_active !== false && s.status !== 'archived').length;
+  const archivedCount = students.length - activeCount;
 
   const hasMissingItems = (s: any) => !s.books_issued || !s.uniform_issued || !s.materials_issued;
 
@@ -173,7 +203,10 @@ const Students = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">{t('students.title')}</h1>
-          <p className="text-muted-foreground">{students.length} {t('students.totalStudents')}</p>
+          <p className="text-muted-foreground">
+            {activeCount} {t('students.totalStudents')}
+            {archivedCount > 0 && <span className="ml-2 text-xs">• {archivedCount} archived</span>}
+          </p>
         </div>
         <Dialog open={open} onOpenChange={(v) => { if (!v) closeDialog(); else setOpen(true); }}>
           <DialogTrigger asChild>
@@ -297,6 +330,14 @@ const Students = () => {
             <SelectItem value="not_issued">❌ Not Issued</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+          <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active Only</SelectItem>
+            <SelectItem value="archived">Archived Only</SelectItem>
+            <SelectItem value="all">All (incl. archived)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Student List */}
@@ -309,10 +350,11 @@ const Students = () => {
           {filtered.map((s: any) => {
             const status = getIssuedStatus(s);
             const missing = hasMissingItems(s);
+            const isArchived = s.is_active === false || s.status === 'archived';
             return (
               <Card
                 key={s.id}
-                className={`shadow-sm cursor-pointer transition-colors ${selectedStudent?.id === s.id ? 'ring-2 ring-primary' : ''} ${missing ? 'border-l-4 border-l-destructive' : ''}`}
+                className={`shadow-sm cursor-pointer transition-colors ${selectedStudent?.id === s.id ? 'ring-2 ring-primary' : ''} ${isArchived ? 'opacity-70 border-l-4 border-l-muted-foreground' : missing ? 'border-l-4 border-l-destructive' : ''}`}
                 onClick={() => setSelectedStudent(selectedStudent?.id === s.id ? null : s)}
               >
                 <CardContent className="p-4">
@@ -320,6 +362,11 @@ const Students = () => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground truncate">{s.name}</h3>
+                        {isArchived && (
+                          <Badge variant="outline" className="text-[10px] border-muted-foreground text-muted-foreground">
+                            <Archive className="h-3 w-3 mr-1" /> Archived
+                          </Badge>
+                        )}
                         {s.has_transport && (
                           <Badge variant="secondary" className="text-[10px] flex items-center gap-1 flex-shrink-0">
                             <Bus className="h-3 w-3" /> {s.transport_type} {s.transport_route ? `• ${s.transport_route}` : ''}
@@ -335,7 +382,7 @@ const Students = () => {
                       <Button variant="outline" size="icon" onClick={() => setDetailsStudent(s)} title="View issued items">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {s.has_transport && s.transport_route && (
+                      {s.has_transport && s.transport_route && !isArchived && (
                         <WhatsAppTransportButton
                           studentName={s.name}
                           transportType={s.transport_type}
@@ -343,15 +390,23 @@ const Students = () => {
                           parentPhone={s.parent_phone}
                         />
                       )}
-                      <Button variant="outline" size="icon" onClick={() => openEdit(s)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" onClick={() => setDeleteTarget(s)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      {!isArchived && (
+                        <Button variant="outline" size="icon" onClick={() => openEdit(s)} title="Edit">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {isArchived ? (
+                        <Button variant="outline" size="icon" onClick={() => restoreMutation.mutate({ id: s.id, name: s.name })} title="Restore">
+                          <ArchiveRestore className="h-4 w-4 text-primary" />
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="icon" onClick={() => setDeleteTarget(s)} title="Archive / Delete">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  {selectedStudent?.id === s.id && (
+                  {selectedStudent?.id === s.id && !isArchived && (
                     <div className="mt-4 pt-4 border-t" onClick={(e) => e.stopPropagation()}>
                       <SiblingManager studentId={s.id} studentName={s.name} />
                     </div>
@@ -363,17 +418,19 @@ const Students = () => {
         </div>
       )}
 
-      {/* Delete Confirmation */}
+      {/* Archive / Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) { setDeleteTarget(null); setDeleteReason(''); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete?</AlertDialogTitle>
+            <AlertDialogTitle>Archive this student?</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to delete <span className="font-semibold">{deleteTarget?.name}</span>. This action cannot be undone. All related records (fees, attendance, etc.) may also be affected.
+              <span className="font-semibold">{deleteTarget?.name}</span> will be removed from active lists and dropdowns.
+              If linked records (attendance, fees, exams, siblings) exist, the student will be <strong>archived</strong> to preserve history.
+              Otherwise, the record will be soft-deleted. You can restore archived students at any time from the "Archived" filter.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Reason for deletion *</label>
+            <label className="text-sm font-medium text-foreground">Reason *</label>
             <Textarea
               placeholder="e.g. Student left the school, duplicate entry..."
               value={deleteReason}
@@ -388,16 +445,19 @@ const Students = () => {
               onClick={(e) => {
                 e.preventDefault();
                 if (deleteTarget && deleteReason.trim()) {
-                  deleteMutation.mutate(deleteTarget.id, {
-                    onSuccess: () => {
-                      setDeleteTarget(null);
-                      setDeleteReason('');
+                  deleteMutation.mutate(
+                    { id: deleteTarget.id, name: deleteTarget.name, reason: deleteReason.trim() },
+                    {
+                      onSuccess: () => {
+                        setDeleteTarget(null);
+                        setDeleteReason('');
+                      },
                     },
-                  });
+                  );
                 }
               }}
             >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete Student'}
+              {deleteMutation.isPending ? 'Processing...' : 'Confirm'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

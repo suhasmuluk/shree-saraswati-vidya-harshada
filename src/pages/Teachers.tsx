@@ -10,8 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Plus, Edit, Trash2, Phone, MapPin, UserCog, Car, School, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Phone, MapPin, UserCog, Car, School, Users, Archive, ArchiveRestore } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { archiveEntity, restoreEntity, softDeleteEntity, type EntityType } from '@/lib/softDelete';
 
 const Teachers = () => {
   const [open, setOpen] = useState(false);
@@ -23,6 +26,9 @@ const Teachers = () => {
   const [classOpen, setClassOpen] = useState(false);
   const [classEditId, setClassEditId] = useState<string | null>(null);
   const [classForm, setClassForm] = useState({ name: '' });
+  const [deleteTarget, setDeleteTarget] = useState<{ type: EntityType; id: string; name: string } | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
@@ -39,7 +45,7 @@ const Teachers = () => {
   const { data: teachers = [], isLoading } = useQuery({
     queryKey: ['teachers'],
     queryFn: async () => {
-      const { data } = await supabase.from('teachers').select('*, classes(name)').order('name');
+      const { data } = await supabase.from('teachers').select('*, classes(name)').eq('is_deleted', false).order('name');
       return data ?? [];
     },
   });
@@ -47,7 +53,7 @@ const Teachers = () => {
   const { data: staff = [], isLoading: staffLoading } = useQuery({
     queryKey: ['staff'],
     queryFn: async () => {
-      const { data } = await supabase.from('staff').select('*').order('role, name');
+      const { data } = await supabase.from('staff').select('*').eq('is_deleted', false).order('role').order('name');
       return data ?? [];
     },
   });
@@ -55,7 +61,7 @@ const Teachers = () => {
   const { data: students = [] } = useQuery({
     queryKey: ['students-count'],
     queryFn: async () => {
-      const { data } = await supabase.from('students').select('id, class_id');
+      const { data } = await supabase.from('students').select('id, class_id').eq('is_deleted', false);
       return data ?? [];
     },
   });
@@ -80,15 +86,31 @@ const Teachers = () => {
     onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('teachers').delete().eq('id', id);
-      if (error) throw error;
+  const archiveMutation = useMutation({
+    mutationFn: async ({ type, id, name, reason }: { type: EntityType; id: string; name: string; reason: string }) => {
+      return await softDeleteEntity(type, id, name, reason);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teachers'] });
-      toast({ title: 'Teacher deleted' });
+    onSuccess: (res, vars) => {
+      queryClient.invalidateQueries({ queryKey: [vars.type === 'teacher' ? 'teachers' : 'staff'] });
+      toast({
+        title: res.archivedInstead ? `${vars.type === 'teacher' ? 'Teacher' : 'Staff'} archived` : `${vars.type === 'teacher' ? 'Teacher' : 'Staff'} deleted`,
+        description: res.archivedInstead
+          ? 'Linked records exist (attendance/salary). Record was archived to preserve history.'
+          : 'Record removed from active lists.',
+      });
     },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async ({ type, id, name }: { type: EntityType; id: string; name: string }) => {
+      await restoreEntity(type, id, name);
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: [vars.type === 'teacher' ? 'teachers' : 'staff'] });
+      toast({ title: 'Restored' });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
 
   // Staff mutations
@@ -111,16 +133,6 @@ const Teachers = () => {
     onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
 
-  const staffDeleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('staff').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['staff'] });
-      toast({ title: 'Staff deleted' });
-    },
-  });
 
   // Class mutations
   const classSaveMutation = useMutation({
@@ -283,23 +295,40 @@ const Teachers = () => {
             <Card><CardContent className="p-8 text-center text-muted-foreground">{t('teachers.noTeachers')}</CardContent></Card>
           ) : (
             <div className="grid gap-3">
-              {teachers.map((tc: any) => (
-                <Card key={tc.id} className="shadow-sm">
+              {teachers.map((tc: any) => {
+                const isArchived = tc.is_active === false || tc.status === 'archived';
+                return (
+                <Card key={tc.id} className={`shadow-sm ${isArchived ? 'opacity-70 border-l-4 border-l-muted-foreground' : ''}`}>
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-foreground">{tc.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-foreground">{tc.name}</h3>
+                        {isArchived && (
+                          <Badge variant="outline" className="text-[10px] border-muted-foreground text-muted-foreground">
+                            <Archive className="h-3 w-3 mr-1" /> Archived
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                         <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{tc.phone}</span>
                         <Badge variant="secondary">{(tc.classes as any)?.name ?? t('teachers.notAssigned')}</Badge>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="icon" onClick={() => openEdit(tc)}><Edit className="h-4 w-4" /></Button>
-                      <Button variant="outline" size="icon" onClick={() => deleteMutation.mutate(tc.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      {!isArchived && <Button variant="outline" size="icon" onClick={() => openEdit(tc)}><Edit className="h-4 w-4" /></Button>}
+                      {isArchived ? (
+                        <Button variant="outline" size="icon" onClick={() => restoreMutation.mutate({ type: 'teacher', id: tc.id, name: tc.name })} title="Restore">
+                          <ArchiveRestore className="h-4 w-4 text-primary" />
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="icon" onClick={() => setDeleteTarget({ type: 'teacher', id: tc.id, name: tc.name })} title="Archive / Delete">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              );})}
             </div>
           )}
         </TabsContent>
@@ -341,13 +370,20 @@ const Teachers = () => {
             <Card><CardContent className="p-8 text-center text-muted-foreground">{t('teachers.noStaff')}</CardContent></Card>
           ) : (
             <div className="grid gap-3">
-              {staff.map((s: any) => (
-                <Card key={s.id} className="shadow-sm">
+              {staff.map((s: any) => {
+                const isArchived = s.is_active === false || s.status === 'archived';
+                return (
+                <Card key={s.id} className={`shadow-sm ${isArchived ? 'opacity-70 border-l-4 border-l-muted-foreground' : ''}`}>
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground">{s.name}</h3>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleColor(s.role)}`}>{s.role}</span>
+                        {isArchived && (
+                          <Badge variant="outline" className="text-[10px] border-muted-foreground text-muted-foreground">
+                            <Archive className="h-3 w-3 mr-1" /> Archived
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                         <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{s.phone}</span>
@@ -355,16 +391,69 @@ const Teachers = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="icon" onClick={() => openStaffEdit(s)}><Edit className="h-4 w-4" /></Button>
-                      <Button variant="outline" size="icon" onClick={() => staffDeleteMutation.mutate(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      {!isArchived && <Button variant="outline" size="icon" onClick={() => openStaffEdit(s)}><Edit className="h-4 w-4" /></Button>}
+                      {isArchived ? (
+                        <Button variant="outline" size="icon" onClick={() => restoreMutation.mutate({ type: 'staff', id: s.id, name: s.name })} title="Restore">
+                          <ArchiveRestore className="h-4 w-4 text-primary" />
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="icon" onClick={() => setDeleteTarget({ type: 'staff', id: s.id, name: s.name })} title="Archive / Delete">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              );})}
             </div>
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Archive / Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) { setDeleteTarget(null); setDeleteReason(''); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive this {deleteTarget?.type}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="font-semibold">{deleteTarget?.name}</span> will be removed from active lists.
+              If linked records exist (attendance / salary), the record will be <strong>archived</strong> to preserve history.
+              Otherwise it will be soft-deleted. Archived records can be restored later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Reason *</label>
+            <Textarea
+              placeholder="e.g. Resigned, transferred, duplicate entry..."
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={archiveMutation.isPending}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={!deleteReason.trim() || archiveMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteTarget && deleteReason.trim()) {
+                  archiveMutation.mutate(
+                    { type: deleteTarget.type, id: deleteTarget.id, name: deleteTarget.name, reason: deleteReason.trim() },
+                    {
+                      onSuccess: () => {
+                        setDeleteTarget(null);
+                        setDeleteReason('');
+                      },
+                    },
+                  );
+                }
+              }}
+            >
+              {archiveMutation.isPending ? 'Processing...' : 'Confirm'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

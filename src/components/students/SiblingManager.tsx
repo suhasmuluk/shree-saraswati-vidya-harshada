@@ -50,7 +50,7 @@ const SiblingManager = ({ studentId, studentName }: SiblingManagerProps) => {
   const { data: allStudents = [] } = useQuery({
     queryKey: ['students-for-linking'],
     queryFn: async () => {
-      const { data } = await supabase.from('students').select('id, name, classes(name)').order('name');
+      const { data } = await supabase.from('students').select('id, name, classes(name)').eq('is_active', true).order('name');
       return data ?? [];
     },
   });
