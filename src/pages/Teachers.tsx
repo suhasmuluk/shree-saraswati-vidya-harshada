@@ -10,8 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Plus, Edit, Trash2, Phone, MapPin, UserCog, Car, School, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Phone, MapPin, UserCog, Car, School, Users, Archive, ArchiveRestore } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { archiveEntity, restoreEntity, softDeleteEntity, type EntityType } from '@/lib/softDelete';
 
 const Teachers = () => {
   const [open, setOpen] = useState(false);
