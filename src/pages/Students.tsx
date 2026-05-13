@@ -330,6 +330,14 @@ const Students = () => {
             <SelectItem value="not_issued">❌ Not Issued</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+          <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active Only</SelectItem>
+            <SelectItem value="archived">Archived Only</SelectItem>
+            <SelectItem value="all">All (incl. archived)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Student List */}
