@@ -87,9 +87,13 @@ const Students = () => {
   });
 
   const { data: students = [], isLoading } = useQuery({
-    queryKey: ['students'],
+      queryKey: ['students'],
     queryFn: async () => {
-      const { data } = await supabase.from('students').select('*, classes(name)').order('name');
+      const { data } = await supabase
+        .from('students')
+        .select('*, classes(name)')
+        .eq('is_deleted', false)
+        .order('name');
       return data ?? [];
     },
   });
@@ -122,14 +126,30 @@ const Students = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('students').delete().eq('id', id);
-      if (error) throw error;
+    mutationFn: async ({ id, name, reason }: { id: string; name: string; reason: string }) => {
+      return await softDeleteEntity('student', id, name, reason);
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast({
+        title: res.archivedInstead ? 'Student archived' : 'Student deleted',
+        description: res.archivedInstead
+          ? 'Linked records exist (attendance/fees/exams). Record was archived to preserve history.'
+          : 'Record removed from active lists.',
+      });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      await restoreEntity('student', id, name);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
-      toast({ title: 'Student deleted' });
+      toast({ title: 'Student restored' });
     },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
   });
 
   const closeDialog = () => {
