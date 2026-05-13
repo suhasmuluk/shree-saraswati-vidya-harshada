@@ -350,10 +350,11 @@ const Students = () => {
           {filtered.map((s: any) => {
             const status = getIssuedStatus(s);
             const missing = hasMissingItems(s);
+            const isArchived = s.is_active === false || s.status === 'archived';
             return (
               <Card
                 key={s.id}
-                className={`shadow-sm cursor-pointer transition-colors ${selectedStudent?.id === s.id ? 'ring-2 ring-primary' : ''} ${missing ? 'border-l-4 border-l-destructive' : ''}`}
+                className={`shadow-sm cursor-pointer transition-colors ${selectedStudent?.id === s.id ? 'ring-2 ring-primary' : ''} ${isArchived ? 'opacity-70 border-l-4 border-l-muted-foreground' : missing ? 'border-l-4 border-l-destructive' : ''}`}
                 onClick={() => setSelectedStudent(selectedStudent?.id === s.id ? null : s)}
               >
                 <CardContent className="p-4">
@@ -361,6 +362,11 @@ const Students = () => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground truncate">{s.name}</h3>
+                        {isArchived && (
+                          <Badge variant="outline" className="text-[10px] border-muted-foreground text-muted-foreground">
+                            <Archive className="h-3 w-3 mr-1" /> Archived
+                          </Badge>
+                        )}
                         {s.has_transport && (
                           <Badge variant="secondary" className="text-[10px] flex items-center gap-1 flex-shrink-0">
                             <Bus className="h-3 w-3" /> {s.transport_type} {s.transport_route ? `• ${s.transport_route}` : ''}
@@ -376,7 +382,7 @@ const Students = () => {
                       <Button variant="outline" size="icon" onClick={() => setDetailsStudent(s)} title="View issued items">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {s.has_transport && s.transport_route && (
+                      {s.has_transport && s.transport_route && !isArchived && (
                         <WhatsAppTransportButton
                           studentName={s.name}
                           transportType={s.transport_type}
@@ -384,15 +390,23 @@ const Students = () => {
                           parentPhone={s.parent_phone}
                         />
                       )}
-                      <Button variant="outline" size="icon" onClick={() => openEdit(s)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" onClick={() => setDeleteTarget(s)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      {!isArchived && (
+                        <Button variant="outline" size="icon" onClick={() => openEdit(s)} title="Edit">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {isArchived ? (
+                        <Button variant="outline" size="icon" onClick={() => restoreMutation.mutate({ id: s.id, name: s.name })} title="Restore">
+                          <ArchiveRestore className="h-4 w-4 text-primary" />
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="icon" onClick={() => setDeleteTarget(s)} title="Archive / Delete">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  {selectedStudent?.id === s.id && (
+                  {selectedStudent?.id === s.id && !isArchived && (
                     <div className="mt-4 pt-4 border-t" onClick={(e) => e.stopPropagation()}>
                       <SiblingManager studentId={s.id} studentName={s.name} />
                     </div>
