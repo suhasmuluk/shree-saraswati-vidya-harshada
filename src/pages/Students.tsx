@@ -186,8 +186,15 @@ const Students = () => {
       (issuedFilter === 'issued' && status === 'all') ||
       (issuedFilter === 'partial' && status === 'partial') ||
       (issuedFilter === 'not_issued' && status === 'none');
-    return matchesSearch && matchesClass && matchesIssued;
+    const isArchived = s.is_active === false || s.status === 'archived';
+    const matchesStatus = statusFilter === 'all'
+      || (statusFilter === 'active' && !isArchived)
+      || (statusFilter === 'archived' && isArchived);
+    return matchesSearch && matchesClass && matchesIssued && matchesStatus;
   });
+
+  const activeCount = students.filter((s: any) => s.is_active !== false && s.status !== 'archived').length;
+  const archivedCount = students.length - activeCount;
 
   const hasMissingItems = (s: any) => !s.books_issued || !s.uniform_issued || !s.materials_issued;
 
