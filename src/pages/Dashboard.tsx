@@ -19,7 +19,7 @@ const Dashboard = () => {
   const { data: totalStudents = 0 } = useQuery({
     queryKey: ['dashboard-students'],
     queryFn: async () => {
-      const { count } = await supabase.from('students').select('*', { count: 'exact', head: true });
+      const { count } = await supabase.from('students').select('*', { count: 'exact', head: true }).eq('is_active', true);
       return count ?? 0;
     },
   });

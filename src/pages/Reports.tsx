@@ -68,7 +68,7 @@ const Reports = () => {
   const { data: staff = [] } = useQuery({
     queryKey: ['staff'],
     queryFn: async () => {
-      const { data } = await supabase.from('staff').select('*').order('name');
+      const { data } = await supabase.from('staff').select('*').eq('is_deleted', false).order('name');
       return data ?? [];
     },
   });

@@ -91,7 +91,7 @@ const Attendance = () => {
   const { data: staffMembers = [] } = useQuery({
     queryKey: ['staff'],
     queryFn: async () => {
-      const { data } = await supabase.from('staff').select('*').order('name');
+      const { data } = await supabase.from('staff').select('*').eq('is_active', true).order('name');
       return data ?? [];
     },
   });
