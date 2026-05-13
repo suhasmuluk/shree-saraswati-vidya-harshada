@@ -45,7 +45,7 @@ const Teachers = () => {
   const { data: teachers = [], isLoading } = useQuery({
     queryKey: ['teachers'],
     queryFn: async () => {
-      const { data } = await supabase.from('teachers').select('*, classes(name)').order('name');
+      const { data } = await supabase.from('teachers').select('*, classes(name)').eq('is_deleted', false).order('name');
       return data ?? [];
     },
   });
@@ -53,7 +53,7 @@ const Teachers = () => {
   const { data: staff = [], isLoading: staffLoading } = useQuery({
     queryKey: ['staff'],
     queryFn: async () => {
-      const { data } = await supabase.from('staff').select('*').order('role, name');
+      const { data } = await supabase.from('staff').select('*').eq('is_deleted', false).order('role').order('name');
       return data ?? [];
     },
   });
@@ -61,7 +61,7 @@ const Teachers = () => {
   const { data: students = [] } = useQuery({
     queryKey: ['students-count'],
     queryFn: async () => {
-      const { data } = await supabase.from('students').select('id, class_id');
+      const { data } = await supabase.from('students').select('id, class_id').eq('is_deleted', false);
       return data ?? [];
     },
   });
