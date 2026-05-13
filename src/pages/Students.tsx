@@ -18,6 +18,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import SiblingManager from '@/components/students/SiblingManager';
 import { WhatsAppTransportButton } from '@/components/students/WhatsAppActions';
 import IssuedItemsDetails from '@/components/students/IssuedItemsDetails';
+import { ArchiveRestore, Archive } from 'lucide-react';
+import { archiveEntity, restoreEntity, softDeleteEntity } from '@/lib/softDelete';
 
 interface StudentForm {
   name: string;
