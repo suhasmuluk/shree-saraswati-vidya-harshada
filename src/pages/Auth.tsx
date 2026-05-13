@@ -4,36 +4,32 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { Shield } from 'lucide-react';
 import schoolLogo from '@/assets/school-logo.png';
 
+const ADMIN_EMAIL = 'admin@school.com';
+
 const Auth = () => {
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        toast({ title: 'Account created!', description: 'You can now sign in.' });
-        setIsSignUp(false);
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email: ADMIN_EMAIL,
+        password,
+      });
+      if (error) throw error;
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -50,18 +46,55 @@ const Auth = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <form onSubmit={handleAuth} className="space-y-4">
-            <Input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
-            </Button>
-          </form>
-          <div className="text-center">
-            <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-sm text-primary hover:underline">
-              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-            </button>
-          </div>
+          {!showPasswordForm ? (
+            <div className="flex flex-col items-center space-y-4">
+              <button
+                type="button"
+                onClick={() => setShowPasswordForm(true)}
+                className="group flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-border hover:border-primary hover:bg-accent transition-all"
+                aria-label="Sign in as Admin"
+              >
+                <div className="w-20 h-20 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                  <Shield className="w-10 h-10 text-primary" />
+                </div>
+                <span className="text-base font-semibold text-foreground">Admin Login</span>
+              </button>
+              <p className="text-xs text-muted-foreground text-center">
+                Click the icon above to sign in as Administrator
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleAdminLogin} className="space-y-4">
+              <div className="flex flex-col items-center space-y-2 mb-2">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Shield className="w-7 h-7 text-primary" />
+                </div>
+                <p className="text-sm font-medium text-foreground">Administrator</p>
+              </div>
+              <Input
+                type="password"
+                placeholder="Enter admin password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                autoFocus
+              />
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Signing in...' : 'Sign In'}
+              </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPasswordForm(false);
+                  setPassword('');
+                }}
+                className="w-full text-sm text-muted-foreground hover:text-foreground"
+              >
+                ← Back
+              </button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
