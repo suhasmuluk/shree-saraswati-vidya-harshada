@@ -409,6 +409,51 @@ const Teachers = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Archive / Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) { setDeleteTarget(null); setDeleteReason(''); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive this {deleteTarget?.type}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="font-semibold">{deleteTarget?.name}</span> will be removed from active lists.
+              If linked records exist (attendance / salary), the record will be <strong>archived</strong> to preserve history.
+              Otherwise it will be soft-deleted. Archived records can be restored later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Reason *</label>
+            <Textarea
+              placeholder="e.g. Resigned, transferred, duplicate entry..."
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={archiveMutation.isPending}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={!deleteReason.trim() || archiveMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteTarget && deleteReason.trim()) {
+                  archiveMutation.mutate(
+                    { type: deleteTarget.type, id: deleteTarget.id, name: deleteTarget.name, reason: deleteReason.trim() },
+                    {
+                      onSuccess: () => {
+                        setDeleteTarget(null);
+                        setDeleteReason('');
+                      },
+                    },
+                  );
+                }
+              }}
+            >
+              {archiveMutation.isPending ? 'Processing...' : 'Confirm'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
