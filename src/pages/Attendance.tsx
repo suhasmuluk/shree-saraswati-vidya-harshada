@@ -35,7 +35,7 @@ const Attendance = () => {
   const { data: students = [] } = useQuery({
     queryKey: ['attendance-students', selectedClass],
     queryFn: async () => {
-      let query = supabase.from('students').select('*, classes(name)').order('name');
+      let query = supabase.from('students').select('*, classes(name)').eq('is_active', true).order('name');
       if (selectedClass !== 'all') query = query.eq('class_id', selectedClass);
       const { data } = await query;
       return data ?? [];
@@ -83,7 +83,7 @@ const Attendance = () => {
   const { data: teachers = [] } = useQuery({
     queryKey: ['teachers'],
     queryFn: async () => {
-      const { data } = await supabase.from('teachers').select('*, classes(name)').order('name');
+      const { data } = await supabase.from('teachers').select('*, classes(name)').eq('is_active', true).order('name');
       return data ?? [];
     },
   });

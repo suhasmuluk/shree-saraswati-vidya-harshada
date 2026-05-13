@@ -23,7 +23,7 @@ const Parents = () => {
   const { data: students = [], isLoading } = useQuery({
     queryKey: ['students-parents'],
     queryFn: async () => {
-      const { data } = await supabase.from('students').select('*, classes(name)').order('parent_name');
+      const { data } = await supabase.from('students').select('*, classes(name)').eq('is_active', true).order('parent_name');
       return data ?? [];
     },
   });

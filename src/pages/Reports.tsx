@@ -16,7 +16,7 @@ const Reports = () => {
   const { data: students = [] } = useQuery({
     queryKey: ['students'],
     queryFn: async () => {
-      const { data } = await supabase.from('students').select('*, classes(name)').order('name');
+      const { data } = await supabase.from('students').select('*, classes(name)').eq('is_deleted', false).order('name');
       return data ?? [];
     },
   });
@@ -60,7 +60,7 @@ const Reports = () => {
   const { data: teachers = [] } = useQuery({
     queryKey: ['teachers'],
     queryFn: async () => {
-      const { data } = await supabase.from('teachers').select('*, classes(name)').order('name');
+      const { data } = await supabase.from('teachers').select('*, classes(name)').eq('is_deleted', false).order('name');
       return data ?? [];
     },
   });

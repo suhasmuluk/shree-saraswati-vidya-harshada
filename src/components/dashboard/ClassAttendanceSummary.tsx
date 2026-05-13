@@ -14,7 +14,7 @@ const ClassAttendanceSummary = () => {
     queryKey: ['dashboard-class-attendance', today],
     queryFn: async () => {
       const [{ data: students }, { data: attendance }] = await Promise.all([
-        supabase.from('students').select('id, class_id, classes(name)'),
+        supabase.from('students').select('id, class_id, classes(name)').eq('is_active', true),
         supabase.from('attendance').select('student_id, status').eq('date', today),
       ]);
       if (!students) return [];

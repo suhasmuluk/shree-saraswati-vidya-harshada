@@ -41,7 +41,7 @@ const ExamResults = () => {
   const { data: students = [] } = useQuery({
     queryKey: ['students'],
     queryFn: async () => {
-      const { data } = await supabase.from('students').select('*, classes(name)').order('name');
+      const { data } = await supabase.from('students').select('*, classes(name)').eq('is_active', true).order('name');
       return data ?? [];
     },
   });

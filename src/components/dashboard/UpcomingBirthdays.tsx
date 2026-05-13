@@ -12,7 +12,7 @@ const UpcomingBirthdays = () => {
   const { data: birthdays = [] } = useQuery({
     queryKey: ['todays-birthdays'],
     queryFn: async () => {
-      const { data: students } = await supabase.from('students').select('id, name, date_of_birth, classes(name)');
+      const { data: students } = await supabase.from('students').select('id, name, date_of_birth, classes(name)').eq('is_active', true);
 
       const today = new Date();
       const todayMonth = getMonth(today);

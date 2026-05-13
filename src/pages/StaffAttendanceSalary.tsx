@@ -47,7 +47,7 @@ const StaffAttendanceSalary = () => {
   const { data: teachers = [] } = useQuery({
     queryKey: ['teachers'],
     queryFn: async () => {
-      const { data } = await supabase.from('teachers').select('*, classes(name)').order('name');
+      const { data } = await supabase.from('teachers').select('*, classes(name)').eq('is_active', true).order('name');
       return data ?? [];
     },
   });
