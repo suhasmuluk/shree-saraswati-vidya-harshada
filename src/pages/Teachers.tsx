@@ -370,13 +370,20 @@ const Teachers = () => {
             <Card><CardContent className="p-8 text-center text-muted-foreground">{t('teachers.noStaff')}</CardContent></Card>
           ) : (
             <div className="grid gap-3">
-              {staff.map((s: any) => (
-                <Card key={s.id} className="shadow-sm">
+              {staff.map((s: any) => {
+                const isArchived = s.is_active === false || s.status === 'archived';
+                return (
+                <Card key={s.id} className={`shadow-sm ${isArchived ? 'opacity-70 border-l-4 border-l-muted-foreground' : ''}`}>
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground">{s.name}</h3>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleColor(s.role)}`}>{s.role}</span>
+                        {isArchived && (
+                          <Badge variant="outline" className="text-[10px] border-muted-foreground text-muted-foreground">
+                            <Archive className="h-3 w-3 mr-1" /> Archived
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                         <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{s.phone}</span>
@@ -384,12 +391,20 @@ const Teachers = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="icon" onClick={() => openStaffEdit(s)}><Edit className="h-4 w-4" /></Button>
-                      <Button variant="outline" size="icon" onClick={() => staffDeleteMutation.mutate(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      {!isArchived && <Button variant="outline" size="icon" onClick={() => openStaffEdit(s)}><Edit className="h-4 w-4" /></Button>}
+                      {isArchived ? (
+                        <Button variant="outline" size="icon" onClick={() => restoreMutation.mutate({ type: 'staff', id: s.id, name: s.name })} title="Restore">
+                          <ArchiveRestore className="h-4 w-4 text-primary" />
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="icon" onClick={() => setDeleteTarget({ type: 'staff', id: s.id, name: s.name })} title="Archive / Delete">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              );})}
             </div>
           )}
         </TabsContent>
