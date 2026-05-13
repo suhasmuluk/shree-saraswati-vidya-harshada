@@ -69,6 +69,7 @@ const Students = () => {
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('all');
   const [issuedFilter, setIssuedFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'archived' | 'all'>('active');
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [deleteReason, setDeleteReason] = useState('');
