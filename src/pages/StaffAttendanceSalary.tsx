@@ -45,7 +45,7 @@ const StaffAttendanceSalary = () => {
   });
 
   const { data: teachers = [] } = useQuery({
-    queryKey: ['teachers'],
+    queryKey: ['teachers', 'active'],
     queryFn: async () => {
       const { data } = await supabase.from('teachers').select('*, classes(name)').eq('is_active', true).order('name');
       return data ?? [];
@@ -53,7 +53,7 @@ const StaffAttendanceSalary = () => {
   });
 
   const { data: staff = [] } = useQuery({
-    queryKey: ['staff'],
+    queryKey: ['staff', 'active'],
     queryFn: async () => {
       const { data } = await supabase.from('staff').select('*').eq('is_active', true).order('name');
       return data ?? [];
