@@ -24,7 +24,7 @@ const Classes = () => {
   });
 
   const { data: teachers = [] } = useQuery({
-    queryKey: ['teachers'],
+    queryKey: ['teachers', 'active'],
     queryFn: async () => {
       const { data } = await supabase.from('teachers').select('name, class_id').eq('is_active', true);
       return data ?? [];
