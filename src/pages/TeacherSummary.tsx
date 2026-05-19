@@ -17,7 +17,7 @@ const TeacherSummary = () => {
   const monthLabel = format(new Date(monthStart), 'MMMM yyyy');
 
   const { data: teachers = [] } = useQuery({
-    queryKey: ['teachers'],
+    queryKey: ['teachers', 'active'],
     queryFn: async () => {
       const { data } = await supabase.from('teachers').select('*, classes(name)').eq('is_active', true).order('name');
       return data ?? [];
